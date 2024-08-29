@@ -2,7 +2,9 @@ package com.ankit.userservice.controller;
 
 import com.ankit.userservice.entity.User;
 import com.ankit.userservice.service.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -22,6 +25,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
+    @CircuitBreaker(name="ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
     public ResponseEntity<User> getUser(@PathVariable("userId") String userId){
         return new ResponseEntity<>(userService.getUser(userId), HttpStatus.OK);
     }
@@ -30,4 +34,14 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUser(){
         return new ResponseEntity<>(userService.getAllUsers(),HttpStatus.OK);
     }
+
+    public ResponseEntity<User> ratingHotelFallback(String userId, Throwable throwable){
+        log.info("Fallback has executed because rating/hotel service is down: {}",throwable);
+        return new ResponseEntity<>(User.builder().build(),HttpStatus.OK);
+    }
+
+//    public ResponseEntity<List<User>> ratingHotelFallback(Exception ex){
+//        log.info("Fallback has executed because rating/hotel service is down: {}",ex);
+//        return new ResponseEntity<>(new ArrayList(),HttpStatus.REQUEST_TIMEOUT);
+//    }
 }
