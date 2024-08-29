@@ -3,6 +3,7 @@ package com.ankit.userservice.controller;
 import com.ankit.userservice.entity.User;
 import com.ankit.userservice.service.UserService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,8 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @CircuitBreaker(name="ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+//    @CircuitBreaker(name="ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+    @Retry(name="ratingHotelRetry", fallbackMethod = "ratingHotelFallback")
     public ResponseEntity<User> getUser(@PathVariable("userId") String userId){
         return new ResponseEntity<>(userService.getUser(userId), HttpStatus.OK);
     }
@@ -39,9 +41,4 @@ public class UserController {
         log.info("Fallback has executed because rating/hotel service is down: {}",throwable);
         return new ResponseEntity<>(User.builder().build(),HttpStatus.OK);
     }
-
-//    public ResponseEntity<List<User>> ratingHotelFallback(Exception ex){
-//        log.info("Fallback has executed because rating/hotel service is down: {}",ex);
-//        return new ResponseEntity<>(new ArrayList(),HttpStatus.REQUEST_TIMEOUT);
-//    }
 }
